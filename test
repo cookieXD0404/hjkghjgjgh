@@ -1,0 +1,50 @@
+const http = require('http');
+const { WebSocketServer } = require('ws');
+
+// Render gibt uns den Port über process.env.PORT vor. Lokal nutzen wir 8080.
+const PORT = process.env.PORT || 8080;
+
+// 1. Einfacher HTTP Server für Renders Health-Check
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('PenguinMod Backend läuft!\n');
+});
+
+// 2. WebSocket Server an den HTTP Server hängen
+const wss = new WebSocketServer({ server });
+
+console.log(`Server startet auf Port ${PORT}...`);
+
+wss.on('connection', (ws) => {
+  console.log('Ein PenguinMod-Client hat sich verbunden.');
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      
+      // DEINE LOGIK: Hier verarbeitest du die Daten
+      if (data.method === 'set') {
+        console.log(`Variable ${data.name} geändert auf: ${data.value}`);
+        
+        // Beispiel: Highscore Logik
+        if (data.name === '☁ Highscore') {
+          let score = parseInt(data.value, 10);
+          if (score > 9999) {
+            console.log("Cheater-Verdacht!");
+          } else {
+            console.log(`Score ${score} verarbeitet.`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Fehler beim Lesen der Daten:", err);
+    }
+  });
+
+  ws.on('close', () => console.log('Client getrennt.'));
+});
+
+// Server starten
+server.listen(PORT, () => {
+  console.log(`Server ist online auf Port ${PORT}`);
+});
